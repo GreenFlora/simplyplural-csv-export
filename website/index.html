@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Simply Plural Member Export</title>
+
+    <link rel="stylesheet" href="styles.css">
+  </head>
+
+  <body>
+    <div class="container">
+      <h1>Simply Plural CSV Member Export</h1>
+
+      <div class="card">
+        <label>API Key</label>
+
+        <input
+          id="apikey"
+          type="password"
+          placeholder="Paste your Simply Plural API key"
+        />
+
+        <div class="radio-group">
+          <label>
+            <input type="radio" name="format" value="csv" checked />
+            CSV
+          </label>
+
+          <label>
+            <input type="radio" name="format" value="json" />
+            JSON
+          </label>
+        </div>
+
+        <button id="exportBtn">Export</button>
+
+        <div class="progress">
+          <div id="progressBar" class="bar"></div>
+        </div>
+
+        <div id="status" class="status"></div>
+
+        <div class="footer">
+          Runs entirely in your browser. Your API key is never stored.
+        </div>
+      </div>
+    </div>
+
+    <script src="script.js" defer></script>
+  </body>
+</html>

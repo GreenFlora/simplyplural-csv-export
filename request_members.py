@@ -1,6 +1,11 @@
 import argparse
+from argparse import Namespace
+from datetime import datetime
+from typing import Any
+
 import requests
 import pandas as pd
+from pandas import DataFrame
 
 BASE_URL = "https://api.apparyllis.com/v1"
 
@@ -38,13 +43,14 @@ def get_members(sys_id, headers):
     response = requests.get(url, headers=headers)
     response.raise_for_status()
 
-    data = response.json()
-
-    return [
-        member["content"]
-        for member in data
-        if "content" in member
-    ]
+    members = []
+    for member in response.json():
+        if "content" in member:
+            content = member["content"]
+            content["id"] = member.get("id")
+            content.pop("uid", None)
+            members.append(content)
+    return members
 
 
 def get_sys_id(headers):
@@ -55,11 +61,24 @@ def get_sys_id(headers):
     data = response.json()
     return data["id"]
 
+def get_history_for_member(member_id, headers):
+    url = f"{BASE_URL}/frontHistory/member/{member_id}"
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+
+    data = response.json()
+
+    return [
+        history["content"]
+        for history in data
+        if "content" in history
+    ]
 
 def main():
     parser = argparse.ArgumentParser(description="Export Simply Plural members to CSV")
     parser.add_argument("--api-key", required=True, help="Simply Plural API key")
     parser.add_argument("--output", default="members.csv", help="Output CSV file")
+    parser.add_argument("--output-history", default=None, help="Output CSV file for history")
 
     args = parser.parse_args()
 
@@ -97,6 +116,31 @@ def main():
     )
 
     print(f"Export complete: {args.output}")
+
+    if args.output_history is not None:
+        export_history(args, df, headers)
+
+
+def export_history(args: Namespace, df: DataFrame, headers: dict[str, Any]):
+    all_history = []
+    for row in df.itertuples():
+        history = get_history_for_member(row.id, headers)
+        for hist in history:
+            hist["member"] = row.id
+            hist.pop("uid", None)
+            for t in ["startTime", "endTime", "lastOperationTime"]:
+                if hist.get(t):
+                    hist[t] = datetime.fromtimestamp(hist[t] / 1000)
+        all_history.extend(history)
+
+    df_history = pd.json_normalize(all_history)
+    df_history.to_csv(
+        args.output_history,
+        sep=",",
+        encoding="utf-8",
+        index=False
+    )
+    print(f"Export complete: {args.output_history}")
 
 
 if __name__ == "__main__":

@@ -193,6 +193,44 @@ def get_polls(sys_id, headers):
 
     return polls
 
+def get_chat_channels(headers):
+    url = f"{BASE_URL}/chat/channels"
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+
+    channels = []
+    for channel in response.json():
+        if "content" in channel:
+            content = normalize_content(channel)
+            channels.append(content)
+
+    return channels
+
+def get_chat_messages_of_channel(channel_id, channel_name, member_id_name_map, headers):
+    url = f"{BASE_URL}/chat/messages/{channel_id}?limit=100&sortBy=writtenAt&sortOrder=1"
+    all_chat_messages = []
+
+    while url:
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        data = response.json()
+
+        if not data:
+            break
+
+        for msg in data:
+            if "content" in msg:
+                content = normalize_content(msg)
+                content["writer"] = member_id_name_map.get(content.get("writer"), content.get("writer"))
+                resolve_timestamps(content, ["writtenAt"])
+                content["channel"] = channel_name
+                all_chat_messages.append(content)
+
+        # next page
+        url = f"{BASE_URL}/chat/messages/{channel_id}?limit=100&skipTo={data[-1]['id']}&sortBy=writtenAt&sortOrder=1"
+
+    return all_chat_messages
+
 def export_csv(data, path):
     df = pd.json_normalize(data)
 
@@ -324,6 +362,21 @@ def export_polls(sys_id, headers, member_id_name_map, output_votes, output_optio
     if output_options:
         export_csv(option_rows, output_options)
 
+def export_chat(member_id_name_map, headers, output_chat_channel, output_chat_messages):
+    channels = get_chat_channels(headers)
+
+    chat_messages = []
+
+    for channel in channels:
+        chat_messages_of_channel = get_chat_messages_of_channel(channel["id"], channel["name"], member_id_name_map, headers)
+        chat_messages.extend(chat_messages_of_channel)
+
+    if output_chat_messages:
+        export_csv(chat_messages, output_chat_messages)
+
+    if output_chat_channel:
+        export_csv(channels, output_chat_channel)
+
 def replace_bucket_names(df_custom_fronts: DataFrame, bucket_lookup):
     df_custom_fronts["buckets"] = df_custom_fronts["buckets"].apply(
         lambda ids: [
@@ -338,18 +391,96 @@ def main():
         description="Export Simply Plural data to CSV"
     )
 
-    parser.add_argument("--api-key", required=True)
+    parser.add_argument(
+        "--api-key",
+        required=True,
+        help="Simply Plural API key used to authenticate all requests"
+    )
 
-    parser.add_argument("--output", default="members.csv")
-    parser.add_argument("--output-history", default=None)
-    parser.add_argument("--output-comments", default=None)
-    parser.add_argument("--output-notes", default=None)
-    parser.add_argument("--output-board", default=None)
-    parser.add_argument("--output-custom-fronts", default=None)
-    parser.add_argument("--output-poll-votes", default="votes.csv")
-    parser.add_argument("--output-poll-options", default="options.csv")
+    parser.add_argument(
+        "--output",
+        default="members.csv",
+        help="CSV file to export the member list"
+    )
+
+    parser.add_argument(
+        "--output-history",
+        default=None,
+        help="CSV file to export member front history (optional)"
+    )
+
+    parser.add_argument(
+        "--output-comments",
+        default=None,
+        help="CSV file to export comments associated with front history entries (optional)"
+    )
+
+    parser.add_argument(
+        "--output-notes",
+        default=None,
+        help="CSV file to export notes of each member (optional)"
+    )
+
+    parser.add_argument(
+        "--output-board",
+        default=None,
+        help="CSV file to export board messages of each member (optional)"
+    )
+
+    parser.add_argument(
+        "--output-custom-fronts",
+        default=None,
+        help="CSV file to export custom front definitions (optional)"
+    )
+
+    parser.add_argument(
+        "--output-poll-votes",
+        default=None,
+        help="CSV file to export poll votes for each poll (optional)"
+    )
+
+    parser.add_argument(
+        "--output-poll-options",
+        default=None,
+        help="CSV file to export poll options for each poll (optional)"
+    )
+
+    parser.add_argument(
+        "--output-chat-channels",
+        default=None,
+        help="CSV file to export chat channel metadata (optional)"
+    )
+
+    parser.add_argument(
+        "--output-chat-messages",
+        default=None,
+        help="CSV file to export chat messages (optional)"
+    )
 
     args = parser.parse_args()
+
+    # Show summary of what will be exported
+    print("\nExport Summary:")
+    print(f"  Members list:          {args.output}")
+    if args.output_history:
+        print(f"  History:               {args.output_history}")
+    if args.output_comments:
+        print(f"  Comments:              {args.output_comments}")
+    if args.output_notes:
+        print(f"  Notes:                 {args.output_notes}")
+    if args.output_board:
+        print(f"  Board messages:        {args.output_board}")
+    if args.output_custom_fronts:
+        print(f"  Custom fronts:         {args.output_custom_fronts}")
+    if args.output_poll_votes:
+        print(f"  Poll votes:            {args.output_poll_votes}")
+    if args.output_poll_options:
+        print(f"  Poll options:          {args.output_poll_options}")
+    if args.output_chat_channels:
+        print(f"  Chat channels:         {args.output_chat_channels}")
+    if args.output_chat_messages:
+        print(f"  Chat messages:         {args.output_chat_messages}")
+    print("\nStarting export...\n")
 
     headers = {
         "Authorization": args.api_key
@@ -426,6 +557,9 @@ def main():
             args.output_poll_options
         )
 
+    if args.output_chat_channels or args.output_chat_messages:
+        export_chat(
+            member_id_name_map, headers, args.output_chat_channels, args.output_chat_messages )
 
 if __name__ == "__main__":
     main()

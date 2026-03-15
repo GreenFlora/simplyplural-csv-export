@@ -175,6 +175,23 @@ def get_comments_for_document(doc_id, doc_type, headers):
 
     return comments
 
+def get_polls(sys_id, headers):
+    url = f"{BASE_URL}/polls/{sys_id}"
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+
+    polls = []
+
+    for poll in response.json():
+        if "content" in poll:
+            content = normalize_content(poll)
+            resolve_timestamps(
+                content,
+                ["endTime"]
+            )
+            polls.append(content)
+
+    return polls
 
 def export_csv(data, path):
     df = pd.json_normalize(data)
@@ -264,6 +281,48 @@ def export_custom_fronts(sys_id, bucket_lookup, headers, output_custom_fronts):
 
     print(f"Export complete: {output_custom_fronts}")
 
+def export_polls(sys_id, headers, member_id_name_map, output_votes, output_options):
+    polls = get_polls(sys_id, headers)
+
+    vote_rows = []
+    option_rows = []
+
+    for poll in polls:
+
+        base_poll = {
+            k: v for k, v in poll.items()
+            if k not in ["votes", "options"]
+        }
+
+        # votes
+        for vote in poll.get("votes", []):
+            row = base_poll.copy()
+
+            voter_id = vote.get("id")
+
+            row["vote.id"] = member_id_name_map.get(
+                voter_id,
+                voter_id
+            )
+
+            row["vote.vote"] = vote.get("vote")
+            row["vote.comment"] = vote.get("comment")
+
+            vote_rows.append(row)
+
+        for option in poll.get("options", []):
+            row = base_poll.copy()
+
+            row["option.name"] = option.get("name")
+            row["option.color"] = option.get("color")
+
+            option_rows.append(row)
+
+    if output_votes:
+        export_csv(vote_rows, output_votes)
+
+    if output_options:
+        export_csv(option_rows, output_options)
 
 def replace_bucket_names(df_custom_fronts: DataFrame, bucket_lookup):
     df_custom_fronts["buckets"] = df_custom_fronts["buckets"].apply(
@@ -286,7 +345,9 @@ def main():
     parser.add_argument("--output-comments", default=None)
     parser.add_argument("--output-notes", default=None)
     parser.add_argument("--output-board", default=None)
-    parser.add_argument("--output-custom-fronts", default="custom_fronts.csv")
+    parser.add_argument("--output-custom-fronts", default=None)
+    parser.add_argument("--output-poll-votes", default="votes.csv")
+    parser.add_argument("--output-poll-options", default="options.csv")
 
     args = parser.parse_args()
 
@@ -355,6 +416,15 @@ def main():
 
     if args.output_custom_fronts:
         export_custom_fronts(sys_id, bucket_lookup, headers, args.output_custom_fronts)
+
+    if args.output_poll_votes or args.output_poll_options:
+        export_polls(
+            sys_id,
+            headers,
+            member_id_name_map,
+            args.output_poll_votes,
+            args.output_poll_options
+        )
 
 
 if __name__ == "__main__":

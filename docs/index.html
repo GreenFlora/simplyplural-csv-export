@@ -14,9 +14,8 @@
       <h1>Simply Plural CSV Member Export</h1>
 
       <div class="card">
-        <label>API Key</label>
-
-        <input
+        <label for="apikey">API Key</label
+        ><input
           id="apikey"
           type="password"
           placeholder="Paste your Simply Plural API key"
@@ -26,22 +25,51 @@
           can be found under <strong>Settings &gt; Account &gt; Tokens</strong>.
         </div>
 
+        <p></p>
+
+        <div class="checkbox-group">
+          <label>
+            <input type="checkbox" id="exportMember" checked disabled />
+            Export members (default)
+          </label>
+          <label>
+            <input type="checkbox" id="exportHistory" />
+            Export front history
+          </label>
+          <label>
+            <input type="checkbox" id="exportComments" />
+            Export comments on front history in extra file.
+          </label>
+          <label>
+            <input type="checkbox" id="exportNotes" />
+            Export notes of each member
+          </label>
+          <label>
+            <input type="checkbox" id="exportBoard" />
+            Export board messages of each member
+          </label>
+          <label>
+            <input type="checkbox" id="exportCustomFronts" />
+            Export custom front definitions
+          </label>
+          <label>
+            <input type="checkbox" id="exportPolls" />
+            Export poll votes and options
+          </label>
+          <label>
+            <input type="checkbox" id="exportChat" />
+            Export chat channels and messages
+          </label>
+        </div>
+
         <div class="radio-group">
           <label>
             <input type="radio" name="format" value="csv" checked />
             CSV
           </label>
-
           <label>
             <input type="radio" name="format" value="json" />
             JSON
-          </label>
-        </div>
-
-        <div class="checkbox-group">
-          <label>
-            <input type="checkbox" id="exportHistory"/>
-            Export whole front history except comments. (Very slow).
           </label>
         </div>
 

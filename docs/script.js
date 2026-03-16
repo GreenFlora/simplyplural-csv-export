@@ -1,4 +1,5 @@
 const BASE_URL = "https://api.apparyllis.com/v1";
+const APP_VERSION = "0.11.0";
 const $ = (id) => document.getElementById(id);
 
 const setStatus = (m) => ($("status").textContent = m);
@@ -502,9 +503,12 @@ async function exportMembers() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  const versionEl = $("appVersion");
+  if (versionEl) versionEl.textContent = `v${APP_VERSION}`;
   $("exportBtn").addEventListener("click", exportMembers);
   $("apikey").addEventListener("keydown", (e) => {
     if (e.key === "Enter") exportMembers();
   });
 });
+
 

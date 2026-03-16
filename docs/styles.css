@@ -4,6 +4,7 @@
   --text: #222;
   --accent: #5865f2;
   --border: #e3e3ea;
+  color-scheme: light dark;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -26,6 +27,7 @@ body {
     sans-serif;
   background: var(--bg);
   color: var(--text);
+  line-height: 1.45;
 }
 
 .container {
@@ -34,12 +36,19 @@ body {
   padding: 40px 20px;
 }
 
+h1 {
+  margin: 0 0 14px;
+  font-size: clamp(1.35rem, 2.3vw, 1.7rem);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
 .card {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 24px;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
 }
 
 label {
@@ -58,13 +67,32 @@ input[type="password"] {
   color: var(--text);
 }
 
+input[type="password"]:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.checkbox-group {
+  margin-top: 12px;
+}
+
+.checkbox-group label {
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
 .radio-group {
-  margin-top: 15px;
+  margin-top: 14px;
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
 .radio-group label {
   font-weight: normal;
-  margin-right: 20px;
+  margin-right: 0;
+  margin-bottom: 0;
 }
 
 button {
@@ -76,6 +104,7 @@ button {
   background: var(--accent);
   color: white;
   cursor: pointer;
+  transition: opacity 0.15s ease;
 }
 
 button:hover {
@@ -111,6 +140,14 @@ button:disabled {
   margin-top: 20px;
   font-size: 13px;
   opacity: 0.7;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.footer-note {
+  text-align: left;
 }
 
 .info-note {
@@ -118,3 +155,30 @@ button:disabled {
   opacity: 0.7;
   margin-top: 5px;
 }
+
+@media (max-width: 560px) {
+  .container {
+    padding: 24px 14px;
+  }
+
+  .card {
+    padding: 18px;
+  }
+}
+
+.version {
+  margin-left: auto;
+  opacity: 0.75;
+  text-align: right;
+}
+
+@media (max-width: 560px) {
+  .footer {
+    flex-wrap: wrap;
+  }
+
+  .version {
+    width: 100%;
+  }
+}
+

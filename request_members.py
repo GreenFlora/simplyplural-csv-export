@@ -93,8 +93,8 @@ def get_sys_id(headers):
     return response.json()["id"]
 
 
-def get_history_for_member(member_id, member_name, headers):
-    url = f"{BASE_URL}/frontHistory/member/{member_id}"
+def get_history_for_document(doc_id, doc_name, headers):
+    url = f"{BASE_URL}/frontHistory/member/{doc_id}"
     response = requests.get(url, headers=headers)
     response.raise_for_status()
 
@@ -104,7 +104,7 @@ def get_history_for_member(member_id, member_name, headers):
         if "content" in history:
             content = normalize_content(history)
 
-            content["member"] = member_name
+            content["member"] = doc_name
 
             resolve_timestamps(
                 content,
@@ -244,12 +244,17 @@ def export_csv(data, path):
     print(f"Export complete: {path}")
 
 
-def export_history(df: DataFrame, headers, output_history, output_comments):
+def export_history(df: DataFrame, custom_fronts: DataFrame, headers, output_history, output_comments):
     all_history = []
 
     for row in df.itertuples():
-        history = get_history_for_member(row.id, row.name, headers)
+        history = get_history_for_document(row.id, row.name, headers)
         all_history.extend(history)
+
+    if custom_fronts is not None:
+        for row in custom_fronts.itertuples():
+            history = get_history_for_document(row.id, row.name, headers)
+            all_history.extend(history)
 
     export_csv(all_history, output_history)
 
@@ -318,6 +323,8 @@ def export_custom_fronts(sys_id, bucket_lookup, headers, output_custom_fronts):
     )
 
     print(f"Export complete: {output_custom_fronts}")
+
+    return df_custom_fronts
 
 def export_polls(sys_id, headers, member_id_name_map, output_votes, output_options):
     polls = get_polls(sys_id, headers)
@@ -521,9 +528,15 @@ def main():
 
     print(f"Export complete: {args.output}")
 
+    custom_fronts = None
+
+    if args.output_custom_fronts:
+        custom_fronts = export_custom_fronts(sys_id, bucket_lookup, headers, args.output_custom_fronts)
+
     if args.output_history:
         export_history(
             df,
+            custom_fronts,
             headers,
             args.output_history,
             args.output_comments
@@ -544,9 +557,6 @@ def main():
             member_id_name_map,
             args.output_board
         )
-
-    if args.output_custom_fronts:
-        export_custom_fronts(sys_id, bucket_lookup, headers, args.output_custom_fronts)
 
     if args.output_poll_votes or args.output_poll_options:
         export_polls(

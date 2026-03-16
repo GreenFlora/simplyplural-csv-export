@@ -311,26 +311,20 @@ async function exportMembers() {
     }
 
     if (includeHistory) {
-      for (let i = 0; i < members.length; i++) {
+      const historyTargets = [
+        ...members.map((m) => ({ id: m.id, name: m.name })),
+        ...customFrontsForHistory.map((cf) => ({ id: cf.id, name: cf.name })),
+      ];
+
+      for (const [i, target] of historyTargets.entries()) {
         allHistory.push(
-          ...(await getHistoryForDocument(members[i].id, members[i].name, key)),
+          ...(await getHistoryForDocument(target.id, target.name, key)),
         );
         setProgress(
-          progressStart + Math.round(((i + 1) / members.length) * progressStep),
+          progressStart +
+            Math.round(((i + 1) / historyTargets.length) * progressStep),
         );
-        setStatus(`Fetching history: ${i + 1}/${members.length}`);
-      }
-
-      if (customFrontsForHistory.length) {
-        for (let i = 0; i < customFrontsForHistory.length; i++) {
-          allHistory.push(
-            ...(await getHistoryForDocument(
-              customFrontsForHistory[i].id,
-              customFrontsForHistory[i].name,
-              key,
-            )),
-          );
-        }
+        setStatus(`Fetching history: ${i + 1}/${historyTargets.length}`);
       }
 
       download(

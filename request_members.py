@@ -233,6 +233,7 @@ def get_chat_messages_of_channel(channel_id, channel_name, member_id_name_map, h
 
 def export_csv(data, path):
     df = pd.json_normalize(data)
+    df = sanitize_newlines_in_dataframe(df)
 
     df.to_csv(
         path,
@@ -393,6 +394,16 @@ def replace_bucket_names(df_custom_fronts: DataFrame, bucket_lookup):
     )
 
 
+def sanitize_newlines_in_dataframe(df: DataFrame) -> DataFrame:
+    return df.apply(
+        lambda col: col.map(
+            lambda value: value.replace("\r\n", "\\n").replace("\n", "\\n").replace("\r", "\\n")
+            if isinstance(value, str)
+            else value
+        )
+    )
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Export Simply Plural data to CSV"
@@ -519,6 +530,8 @@ def main():
     if "buckets" in df.columns:
         replace_bucket_names(df, bucket_lookup)
 
+    df = sanitize_newlines_in_dataframe(df)
+
     df.to_csv(
         args.output,
         sep=",",
@@ -573,3 +586,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

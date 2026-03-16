@@ -46,7 +46,10 @@ function flattenCustomFront(front) {
 // CSV helper
 function toCSV(rows) {
   const headers = [...new Set(rows.flatMap((r) => Object.keys(r)))];
-  const escape = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const sanitizeCSVValue = (v) =>
+    String(v ?? "")
+      .replace(/\r\n/g, "\\n").replace(/[\r\n]/g, "\\n");
+  const escape = (v) => `"${sanitizeCSVValue(v).replace(/"/g, '""')}"`;
   const lines = [
     headers.join(","),
     ...rows.map((r) =>
@@ -510,3 +513,4 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.key === "Enter") exportMembers();
   });
 });
+

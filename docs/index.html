@@ -11,18 +11,18 @@
 
   <body>
     <div class="container">
-      <h1>Simply Plural CSV Member Export</h1>
+      <h1>Simply Plural Member Export</h1>
 
       <div class="card">
         <label for="apikey">API Key</label
         ><input
           id="apikey"
           type="password"
-          placeholder="Paste your Simply Plural API key"
+          placeholder="Paste your Simply Plural API key here"
         />
         <div class="info-note">
-          You will need to generate an API key in the Simply Plural App. This
-          can be found under <strong>Settings &gt; Account &gt; Tokens</strong>.
+          Generate an API key in the Simply Plural app under
+          <strong>Settings &gt; Account &gt; Tokens</strong>.
         </div>
 
         <p></p>
@@ -30,7 +30,7 @@
         <div class="checkbox-group">
           <label>
             <input type="checkbox" id="exportMember" checked disabled />
-            Export members (default)
+            Export members (required)
           </label>
           <label>
             <input type="checkbox" id="exportHistory" />
@@ -38,15 +38,15 @@
           </label>
           <label>
             <input type="checkbox" id="exportComments" />
-            Export comments on front history in extra file.
+            Export front-history comments in a separate file
           </label>
           <label>
             <input type="checkbox" id="exportNotes" />
-            Export notes of each member
+            Export member notes
           </label>
           <label>
             <input type="checkbox" id="exportBoard" />
-            Export board messages of each member
+            Export member board messages
           </label>
           <label>
             <input type="checkbox" id="exportCustomFronts" />
@@ -54,7 +54,7 @@
           </label>
           <label>
             <input type="checkbox" id="exportPolls" />
-            Export poll votes and options
+            Export poll options and votes
           </label>
           <label>
             <input type="checkbox" id="exportChat" />
@@ -82,7 +82,10 @@
         <div id="status" class="status"></div>
 
         <div class="footer">
-          Runs entirely in your browser. Your API key is never stored.
+          <span class="footer-note"
+            >Runs entirely in your browser. Your API key is not stored.</span
+          >
+          <span id="appVersion" class="version"></span>
         </div>
       </div>
     </div>

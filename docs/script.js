@@ -79,13 +79,13 @@ async function doWithProgress(stageName, progressStart, progressEnd, fn) {
 }
 
 // Fetch functions
-async function getHistoryForMember(memberId, memberName, key) {
-  const data = await api(`/frontHistory/member/${memberId}`, key);
+async function getHistoryForDocument(docId, docName, key) {
+  const data = await api(`/frontHistory/member/${docId}`, key);
   return (data || [])
     .filter((h) => h.content)
     .map((h) => {
       const content = { ...h.content };
-      content.member = memberName;
+      content.member = docName;
       content.id = h.id;
       delete content.uid;
       ["startTime", "endTime", "lastOperationTime"].forEach((t) => {
@@ -301,16 +301,35 @@ async function exportMembers() {
 
     // History
     let allHistory = [];
+    let customFrontsForHistory = [];
+
+    if (includeCustomFronts) {
+      customFrontsForHistory = (await getCustomFronts(sysId, key)) || [];
+    }
+
     if (includeHistory) {
       for (let i = 0; i < members.length; i++) {
         allHistory.push(
-          ...(await getHistoryForMember(members[i].id, members[i].name, key)),
+          ...(await getHistoryForDocument(members[i].id, members[i].name, key)),
         );
         setProgress(
           progressStart + Math.round(((i + 1) / members.length) * progressStep),
         );
         setStatus(`Fetching history: ${i + 1}/${members.length}`);
       }
+
+      if (customFrontsForHistory.length) {
+        for (let i = 0; i < customFrontsForHistory.length; i++) {
+          allHistory.push(
+            ...(await getHistoryForDocument(
+              customFrontsForHistory[i].id,
+              customFrontsForHistory[i].name,
+              key,
+            )),
+          );
+        }
+      }
+
       download(
         format === "json"
           ? JSON.stringify(allHistory, null, 2)
@@ -410,8 +429,7 @@ async function exportMembers() {
 
     // Custom Fronts
     if (includeCustomFronts) {
-      const cfRaw = await getCustomFronts(sysId, key);
-      const customFronts = cfRaw.map(flattenCustomFront);
+      const customFronts = customFrontsForHistory.map(flattenCustomFront);
       download(
         format === "json"
           ? JSON.stringify(customFronts, null, 2)

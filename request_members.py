@@ -1,9 +1,9 @@
 import argparse
 from datetime import datetime
-from typing import Any, Iterable
+from typing import Iterable
 
-import requests
 import pandas as pd
+import requests
 from pandas import DataFrame
 
 BASE_URL = "https://api.apparyllis.com/v1"
@@ -12,7 +12,7 @@ BASE_URL = "https://api.apparyllis.com/v1"
 def resolve_timestamps(obj: dict, fields: Iterable[str]):
     for field in fields:
         if obj.get(field):
-            obj[field] = datetime.fromtimestamp(obj[field] / 1000)
+            obj[field] = datetime.fromtimestamp(obj[field] / 1000).isoformat()
 
 
 def normalize_content(obj):
@@ -24,7 +24,7 @@ def normalize_content(obj):
     if content.get("lastOperationTime"):
         content["lastOperationTime"] = datetime.fromtimestamp(
             content["lastOperationTime"] / 1000
-        )
+        ).isoformat()
 
     return content
 
@@ -316,6 +316,8 @@ def export_custom_fronts(sys_id, bucket_lookup, headers, output_custom_fronts):
     if "buckets" in df_custom_fronts.columns:
         replace_bucket_names(df_custom_fronts, bucket_lookup)
 
+    df_custom_fronts = sanitize_newlines_in_dataframe(df_custom_fronts)
+
     df_custom_fronts.to_csv(
         output_custom_fronts,
         sep=",",
@@ -334,33 +336,28 @@ def export_polls(sys_id, headers, member_id_name_map, output_votes, output_optio
     option_rows = []
 
     for poll in polls:
+        poll_id = poll.get("id")
+        poll_name = poll.get("name")
 
-        base_poll = {
-            k: v for k, v in poll.items()
-            if k not in ["votes", "options"]
-        }
-
-        # votes
         for vote in poll.get("votes", []):
-            row = base_poll.copy()
-
             voter_id = vote.get("id")
-
-            row["vote.id"] = member_id_name_map.get(
-                voter_id,
-                voter_id
-            )
-
-            row["vote.vote"] = vote.get("vote")
-            row["vote.comment"] = vote.get("comment")
+            row = {
+                "pollId": poll_id,
+                "pollName": poll_name,
+                "voter": member_id_name_map.get(voter_id, voter_id),
+                "vote": vote.get("vote"),
+                "comment": vote.get("comment"),
+            }
 
             vote_rows.append(row)
 
         for option in poll.get("options", []):
-            row = base_poll.copy()
-
-            row["option.name"] = option.get("name")
-            row["option.color"] = option.get("color")
+            row = {
+                "pollId": poll_id,
+                "pollName": poll_name,
+                "optionName": option.get("name"),
+                "optionColor": option.get("color"),
+            }
 
             option_rows.append(row)
 

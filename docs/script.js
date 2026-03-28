@@ -19,6 +19,32 @@ async function api(path, key) {
   return r.json();
 }
 
+function formatEpochMsToIsoUtc(value) {
+  const ms = Number(value);
+  if (!Number.isFinite(ms)) return value;
+  return new Date(ms).toISOString();
+}
+
+function normalizeContent(doc, timestampFields = []) {
+  const content = { ...(doc?.content || {}) };
+  content.id = doc?.id;
+  delete content.uid;
+
+  if (content.lastOperationTime) {
+    content.lastOperationTime = formatEpochMsToIsoUtc(
+      content.lastOperationTime,
+    );
+  }
+
+  for (const field of timestampFields) {
+    if (content[field]) {
+      content[field] = formatEpochMsToIsoUtc(content[field]);
+    }
+  }
+
+  return content;
+}
+
 // Flatten helpers
 function flatten(member) {
   const flat = { ...member };
@@ -88,13 +114,8 @@ async function getHistoryForDocument(docId, docName, key) {
   return (data || [])
     .filter((h) => h.content)
     .map((h) => {
-      const content = { ...h.content };
+      const content = normalizeContent(h, ["startTime", "endTime"]);
       content.member = docName;
-      content.id = h.id;
-      delete content.uid;
-      ["startTime", "endTime", "lastOperationTime"].forEach((t) => {
-        if (content[t]) content[t] = new Date(content[t]).toISOString();
-      });
       return content;
     });
 }
@@ -104,9 +125,8 @@ async function getNotesForMember(memberId, memberName, sysId, key) {
   return (data || [])
     .filter((n) => n.content)
     .map((n) => {
-      const c = { ...n.content };
+      const c = normalizeContent(n);
       c.member = memberName;
-      delete c.uid;
       return c;
     });
 }
@@ -116,20 +136,16 @@ async function getBoardForMember(memberId, memberName, memberIdNameMap, key) {
   return (data || [])
     .filter((m) => m.content)
     .map((m) => {
-      const c = { ...m.content };
+      const c = normalizeContent(m, ["writtenAt"]);
       c.writtenFor = memberName;
       c.writtenBy = memberIdNameMap[c.writtenBy] || c.writtenBy;
-      if (c.writtenAt) c.writtenAt = new Date(c.writtenAt).toISOString();
-      delete c.uid;
       return c;
     });
 }
 
 async function getCustomFronts(sysId, key) {
   const data = await api(`/customFronts/${sysId}`, key);
-  return (data || [])
-    .filter((cf) => cf.content)
-    .map((cf) => ({ ...cf.content, id: cf.id }));
+  return (data || []).filter((cf) => cf.content).map((cf) => normalizeContent(cf));
 }
 
 async function getPolls(sysId, memberIdNameMap, key) {
@@ -139,12 +155,13 @@ async function getPolls(sysId, memberIdNameMap, key) {
   (data || [])
     .filter((p) => p.content)
     .forEach((p) => {
-      const poll = { ...p.content };
+      const poll = normalizeContent(p);
       (poll.votes || []).forEach((v) => {
+        const voterId = v.id;
         votes.push({
           pollId: poll.id,
           pollName: poll.name,
-          voter: memberIdNameMap[v.id] || v.id,
+          voter: memberIdNameMap[voterId] || voterId,
           vote: v.vote,
           comment: v.comment,
         });
@@ -163,9 +180,7 @@ async function getPolls(sysId, memberIdNameMap, key) {
 
 async function getChatChannels(key) {
   const data = await api(`/chat/channels`, key);
-  return (data || [])
-    .filter((c) => c.content)
-    .map((c) => ({ ...c.content, id: c.id }));
+  return (data || []).filter((c) => c.content).map((c) => normalizeContent(c));
 }
 
 async function getChatMessages(channelId, channelName, memberIdNameMap, key) {
@@ -178,11 +193,9 @@ async function getChatMessages(channelId, channelName, memberIdNameMap, key) {
       ...data
         .filter((m) => m.content)
         .map((m) => {
-          const c = { ...m.content };
+          const c = normalizeContent(m, ["writtenAt"]);
           c.channel = channelName;
           c.writer = memberIdNameMap[c.writer] || c.writer;
-          if (c.writtenAt) c.writtenAt = new Date(c.writtenAt).toISOString();
-          delete c.uid;
           return c;
         }),
     );
@@ -195,13 +208,7 @@ async function getChatMessages(channelId, channelName, memberIdNameMap, key) {
 
 async function getCommentsForDocument(docId, docType, key) {
   const data = await api(`/comments/${docType}/${docId}`, key);
-  return (data || [])
-    .filter((c) => c.content)
-    .map((c) => {
-      const content = { ...c.content, docType, docId };
-      delete content.uid;
-      return content;
-    });
+  return (data || []).filter((c) => c.content).map((c) => normalizeContent(c));
 }
 
 // Main export (updated for history comments)
@@ -239,7 +246,7 @@ async function exportMembers() {
     );
     const members = (membersRaw || [])
       .filter((m) => m?.content)
-      .map((m) => ({ ...m.content, id: m.id }));
+      .map((m) => normalizeContent(m));
     const memberIdNameMap = Object.fromEntries(
       members.map((m) => [m.id, m.name]),
     );
@@ -427,7 +434,15 @@ async function exportMembers() {
 
     // Custom Fronts
     if (includeCustomFronts) {
-      const customFronts = customFrontsForHistory.map(flattenCustomFront);
+      const customFronts = customFrontsForHistory
+        .map((cf) => {
+          const out = { ...cf };
+          if (Array.isArray(out.buckets)) {
+            out.buckets = out.buckets.map((b) => bucketLookup[b] || b);
+          }
+          return out;
+        })
+        .map(flattenCustomFront);
       download(
         format === "json"
           ? JSON.stringify(customFronts, null, 2)

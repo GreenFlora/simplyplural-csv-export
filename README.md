@@ -17,6 +17,14 @@ It uses the SimplyPlural API to allow users to export their own data for persona
 
 This project was created to help users export their SimplyPlural data without manually copying it from the interface.
 
+## Browser Exporter
+
+Use the tool directly in your browser (no installation required):
+
+https://gh.flowerforest.dev/
+
+Runs entirely in your browser. Your API key is not stored.
+
 ## What It Can Export
 
 The Python exporter can export:

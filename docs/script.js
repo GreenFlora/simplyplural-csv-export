@@ -1,5 +1,5 @@
 const BASE_URL = "https://api.apparyllis.com/v1";
-const APP_VERSION = "0.12.0";
+const APP_VERSION = "0.13.0";
 const $ = (id) => document.getElementById(id);
 
 const setStatus = (m) => ($("status").textContent = m);
@@ -517,6 +517,55 @@ async function exportMembers() {
   btn.disabled = false;
 }
 
+async function testApiKey() {
+  const btn = $("apiKeyTestBtn");
+  const testInfoField = $("testInfoStatus");
+  const key = $("apikey").value.trim();
+
+  testInfoField.textContent = "";
+  testInfoField.className = "";
+
+  if (!key) {
+    testInfoField.className = "error";
+    testInfoField.textContent = "Please enter an API key";
+    return;
+  }
+
+  if (key.length != 64) {
+    testInfoField.className = "error";
+    testInfoField.textContent = "API key appears invalid. Wrong length.";
+    return;
+  }
+
+  btn.disabled = true;
+
+  testInfoField.className = "loading";
+  testInfoField.textContent = "Testing token...";
+
+  try {
+    const data = await api("/me", key);
+
+    if (!data?.content) {
+      throw new Error("No account data returned");
+    }
+
+    if (!data.content.isAsystem) {
+      testInfoField.className = "error";
+      testInfoField.textContent = `Hello ${data.content.username}. Data export is unavailable because this account type is not supported.`;
+    } else {
+      testInfoField.className = "success";
+      testInfoField.textContent = `Welcome, ${data.content.username}`;
+    }
+  } catch (e) {
+    console.error(e);
+
+    testInfoField.className = "error";
+    testInfoField.textContent = e.message || "Invalid token or network error";
+  }
+
+  btn.disabled = false;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   const versionEl = $("appVersion");
   if (versionEl) versionEl.textContent = `v${APP_VERSION}`;
@@ -527,3 +576,8 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
+document.addEventListener("DOMContentLoaded", () => {
+  const versionEl = $("appVersion");
+  if (versionEl) versionEl.textContent = `v${APP_VERSION}`;
+  $("apiKeyTestBtn")?.addEventListener("click", testApiKey);
+})

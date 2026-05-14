@@ -182,3 +182,40 @@ button:disabled {
   }
 }
 
+.api-key-test-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+
+  font-size: 13px;
+  opacity: 0.85;
+  flex-wrap: wrap;
+}
+
+.small-btn {
+  margin-top: 0;
+  padding: 6px 12px;
+  font-size: 13px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+#testInfoStatus {
+  margin: 0;
+  min-height: 18px;
+  font-size: 13px;
+  transition: color 0.2s ease;
+}
+
+#testInfoStatus.success {
+  color: green;
+}
+
+#testInfoStatus.error {
+  color: red;
+}
+
+#testInfoStatus.loading {
+  opacity: 0.7;
+}

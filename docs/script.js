@@ -1,5 +1,5 @@
 const BASE_URL = "https://api.apparyllis.com/v1";
-const APP_VERSION = "0.13.0";
+const APP_VERSION = "0.13.1";
 const $ = (id) => document.getElementById(id);
 
 const setStatus = (m) => ($("status").textContent = m);

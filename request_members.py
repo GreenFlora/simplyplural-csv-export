@@ -71,6 +71,7 @@ def get_members(sys_id, headers):
 
     return members
 
+
 def get_custom_fronts(sys_id, headers):
     url = f"{BASE_URL}/customFronts/{sys_id}"
     response = requests.get(url, headers=headers)
@@ -105,6 +106,9 @@ def get_history_for_document(doc_id, doc_name, headers):
             content = normalize_content(history)
 
             content["member"] = doc_name
+            content["memberId"] = doc_id
+            content["documentName"] = doc_name
+            content["documentId"] = doc_id
 
             resolve_timestamps(
                 content,
@@ -128,6 +132,7 @@ def get_notes_for_member(member_id, member_name, sys_id, headers):
             content = normalize_content(note)
 
             content["member"] = member_name
+            content["memberId"] = member_id
 
             notes.append(content)
 
@@ -145,10 +150,14 @@ def get_board_of_member(member_id, member_name, member_id_name_map, headers):
         if "content" in message:
             content = normalize_content(message)
 
+            written_by_id = content.get("writtenBy")
+
             content["writtenFor"] = member_name
+            content["writtenForId"] = member_id
+            content["writtenById"] = written_by_id
             content["writtenBy"] = member_id_name_map.get(
-                content["writtenBy"],
-                content["writtenBy"]
+                written_by_id,
+                written_by_id
             )
 
             resolve_timestamps(
@@ -171,6 +180,8 @@ def get_comments_for_document(doc_id, doc_type, headers):
     for comment in response.json():
         if "content" in comment:
             content = normalize_content(comment)
+            content["documentId"] = doc_id
+            content["documentType"] = doc_type
             comments.append(content)
 
     return comments
@@ -221,9 +232,16 @@ def get_chat_messages_of_channel(channel_id, channel_name, member_id_name_map, h
         for msg in data:
             if "content" in msg:
                 content = normalize_content(msg)
-                content["writer"] = member_id_name_map.get(content.get("writer"), content.get("writer"))
+
+                content["writerId"] = content.get("writer")
+                content["writer"] = member_id_name_map.get(
+                    content.get("writer"),
+                    content.get("writer")
+                )
+
                 resolve_timestamps(content, ["writtenAt"])
                 content["channel"] = channel_name
+                content["channelId"] = channel_id
                 all_chat_messages.append(content)
 
         # next page
@@ -345,6 +363,7 @@ def export_polls(sys_id, headers, member_id_name_map, output_votes, output_optio
                 "pollId": poll_id,
                 "pollName": poll_name,
                 "voter": member_id_name_map.get(voter_id, voter_id),
+                "voterId": voter_id,
                 "vote": vote.get("vote"),
                 "comment": vote.get("comment"),
             }
@@ -583,4 +602,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

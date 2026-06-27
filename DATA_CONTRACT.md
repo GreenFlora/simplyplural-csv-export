@@ -17,6 +17,7 @@ This document defines the CSV outputs produced by `request_members.py`.
 - Most string fields have newlines normalized:
   - `\r\n`, `\n`, `\r` -> literal `\\n`
 - Privacy bucket ids are replaced with bucket names where implemented.
+- Where a human-readable name is added for context, the corresponding source id is also exported when implemented. This avoids ambiguity when multiple members, channels, or documents have the same name.
 
 ## Output Files
 
@@ -46,7 +47,10 @@ Source:
 Columns:
 - All front history content fields (dynamic)
 - `id`
-- `member` (member/custom-front name used for lookup context)
+- `member` — member/custom-front name used for lookup context
+- `memberId` — id of the member/custom-front used for lookup context
+- `documentName` — same contextual document name as `member`
+- `documentId` — same contextual document id as `memberId`
 
 Timestamp conversions:
 - `startTime`
@@ -61,10 +65,11 @@ Source:
 Columns:
 - All comment content fields (dynamic)
 - `id`
+- `documentId` — id of the document the comment belongs to
+- `documentType` — document type used for the comments endpoint, currently `frontHistory`
 - `lastOperationTime` (if present)
 
 Notes:
-- Python exporter does not add `docType`/`docId` helper columns.
 - In current flow, comments are exported as front-history comments.
 
 ### `notes.csv` (when `--output-notes` is set)
@@ -75,7 +80,8 @@ Source:
 Columns:
 - All note content fields (dynamic)
 - `id`
-- `member` (member name)
+- `member` — member name
+- `memberId` — member id
 - `lastOperationTime` (if present)
 
 ### `board.csv` (when `--output-board` is set)
@@ -86,8 +92,10 @@ Source:
 Columns:
 - All board message content fields (dynamic)
 - `id`
-- `writtenFor` (target member name)
-- `writtenBy` (member id mapped to name when possible)
+- `writtenFor` — target member name
+- `writtenForId` — target member id
+- `writtenBy` — writer member id mapped to name when possible
+- `writtenById` — original writer member id
 - `writtenAt`
 - `lastOperationTime` (if present)
 
@@ -118,7 +126,8 @@ Source:
 Columns:
 - `pollId`
 - `pollName`
-- `voter` (member id mapped to name when possible)
+- `voter` — voter member id mapped to name when possible
+- `voterId` — original voter member id
 - `vote`
 - `comment`
 
@@ -159,8 +168,10 @@ Source:
 Columns:
 - All chat message content fields (dynamic)
 - `id`
-- `channel` (channel name)
-- `writer` (member id mapped to name when possible)
+- `channel` — channel name
+- `channelId` — channel id
+- `writer` — writer member id mapped to name when possible
+- `writerId` — original writer member id
 - `writtenAt`
 - `lastOperationTime` (if present)
 

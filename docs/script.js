@@ -116,6 +116,9 @@ async function getHistoryForDocument(docId, docName, key) {
     .map((h) => {
       const content = normalizeContent(h, ["startTime", "endTime"]);
       content.member = docName;
+      content.memberId = docId;
+      content.documentName = docName;
+      content.documentId = docId;
       return content;
     });
 }
@@ -127,6 +130,7 @@ async function getNotesForMember(memberId, memberName, sysId, key) {
     .map((n) => {
       const c = normalizeContent(n);
       c.member = memberName;
+      c.memberId = memberId;
       return c;
     });
 }
@@ -137,8 +141,11 @@ async function getBoardForMember(memberId, memberName, memberIdNameMap, key) {
     .filter((m) => m.content)
     .map((m) => {
       const c = normalizeContent(m, ["writtenAt"]);
+      const writtenById = c.writtenBy;
       c.writtenFor = memberName;
-      c.writtenBy = memberIdNameMap[c.writtenBy] || c.writtenBy;
+      c.writtenForId = memberId;
+      c.writtenById = writtenById;
+      c.writtenBy = memberIdNameMap[writtenById] || writtenById;
       return c;
     });
 }
@@ -162,6 +169,7 @@ async function getPolls(sysId, memberIdNameMap, key) {
           pollId: poll.id,
           pollName: poll.name,
           voter: memberIdNameMap[voterId] || voterId,
+          voterId,
           vote: v.vote,
           comment: v.comment,
         });
@@ -194,8 +202,11 @@ async function getChatMessages(channelId, channelName, memberIdNameMap, key) {
         .filter((m) => m.content)
         .map((m) => {
           const c = normalizeContent(m, ["writtenAt"]);
+          const writerId = c.writer;
+          c.writerId = writerId;
+          c.writer = memberIdNameMap[writerId] || writerId;
           c.channel = channelName;
-          c.writer = memberIdNameMap[c.writer] || c.writer;
+          c.channelId = channelId;
           return c;
         }),
     );
@@ -208,7 +219,14 @@ async function getChatMessages(channelId, channelName, memberIdNameMap, key) {
 
 async function getCommentsForDocument(docId, docType, key) {
   const data = await api(`/comments/${docType}/${docId}`, key);
-  return (data || []).filter((c) => c.content).map((c) => normalizeContent(c));
+  return (data || [])
+    .filter((c) => c.content)
+    .map((c) => {
+      const content = normalizeContent(c);
+      content.documentId = docId;
+      content.documentType = docType;
+      return content;
+    });
 }
 
 // Main export (updated for history comments)
